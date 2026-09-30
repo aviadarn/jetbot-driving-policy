@@ -43,6 +43,11 @@ flowchart LR
   TR --> X["ONNX opset 11"] --> TRT["TensorRT 8.2 FP16<br/>Jetson Nano"]
 ```
 
+The simulator is matched to the 2024 camera frames (top) by eye, then every assumption is
+listed in [docs/SIM_TO_REAL.md](docs/SIM_TO_REAL.md):
+
+![Frames from the 2024 car's camera above frames from the simulator](assets/sim_vs_2024.jpg)
+
 On the car, every camera frame goes through the same path the 2024 notebook used:
 
 ```mermaid
@@ -61,6 +66,7 @@ flowchart LR
 | Train / closed-loop eval / DAgger | `scripts/train.py`, `scripts/eval.py`, `scripts/dagger.py` |
 | On the Nano: TensorRT runner, live camera loop, benchmarks | `nano/` |
 | What is matched to the car and what is a guess | [docs/SIM_TO_REAL.md](docs/SIM_TO_REAL.md) |
+| Trained steering policy, PyTorch and ONNX | [release v1.0](https://github.com/aviadarn/jetbot-driving-policy/releases/tag/v1.0) |
 
 ## What the 2024 code did
 
@@ -249,7 +255,7 @@ _Clocks: pinned with jetson_clocks: GPU 921.6 MHz, CPU 1479 MHz, nvpmodel MAXN._
 
 Two things only showed up when measured:
 - **Clocks.** Unpinned, the GPU governor parks the Nano at 537.6 MHz, because the loop only
-  keeps the GPU busy about 45% of each frame. Decisions then take 22.8 ms instead of 14.4 ms.
+  keeps the GPU busy about half of each frame. Decisions then take 22.8 ms instead of 14.4 ms.
   Run `sudo jetson_clocks` before trusting any number (`results/nano/governor_unpinned.json`).
 - **INT8 doesn't exist here.** The Nano is Maxwell (SM 5.3), with no DP4A. FP16 is the only
   lever.
