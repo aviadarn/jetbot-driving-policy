@@ -93,3 +93,15 @@ def test_positive_steer_turns_right():
     for _ in range(40):
         car.step(0.34, 1.0)
     assert car.psi < 0 and car.y < 0
+
+
+def test_fisheye_remap_is_mirror_symmetric():
+    """Rendering must not give frames a handedness: remap(mirror(P)) == mirror(remap(P)).
+    A half-pixel offset in the anti-aliasing pyramid once broke this, and the 2024-label
+    network learned to tell flipped training frames apart from it."""
+    rng = np.random.default_rng(0)
+    f = Fisheye()
+    pin = rng.integers(0, 256, (f.cfg.render, f.cfg.render, 3), dtype=np.uint8)
+    a = f.remap(pin[:, ::-1].copy()).astype(float)
+    b = f.remap(pin)[:, ::-1].astype(float)
+    assert np.abs(a - b).mean() < 0.05  # pyrDown gave 1.4, the old maps 4.5

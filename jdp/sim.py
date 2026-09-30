@@ -76,7 +76,7 @@ class Sim:
 
 
 def run_episode(sim, policy, controller, start_s=0.3, latency_steps=None, max_time=None,
-                record=None, stop_fn=None, period=1):
+                record=None, stop_fn=None, period=1, start_lateral=0.0, start_dheading=0.0):
     """Closed-loop drive from the start of the corridor to its end.
 
     policy(img, pose) -> (x, y) in the policy's label convention (learned policies ignore
@@ -86,7 +86,7 @@ def run_episode(sim, policy, controller, start_s=0.3, latency_steps=None, max_ti
     `period` frames and the last command is held in between (latency_steps sets the delay).
     """
     tr = sim.track
-    car = Car(tr.pose_at(start_s), latency_steps=latency_steps)
+    car = Car(tr.pose_at(start_s, lateral=start_lateral, dheading=start_dheading), latency_steps=latency_steps)
     controller.reset()
     max_time = max_time or tr.length / 0.2  # generous: 0.2 m/s average
     hint = tr.index(start_s)

@@ -20,10 +20,14 @@ MAIN = [("natural", "natural: 3000 clean expert-drive frames"),
         ("uniform", "uniform (R2, 1:1:1)"),
         ("r3_ratio", "R3 ratio (2500:1000:1000)"),
         ("dagger", "DAgger: 1500 drive + 1500 on-policy")]
-HIST = [("hist_r1", "R1: 1800 (800/600/400)"),
-        ("hist_r2", "R2: 3000 (1000/1000/1000)"),
-        ("hist_r3", "R3: 4500 (2500/1000/1000)"),
-        ("hist_r3_bug", "R3 with the 2024 labels + flip")]
+# hist_r2 is not listed: R2 was the uniform 1000/1000/1000 set, so with nested sampling and the
+# same seed it is the `uniform` run, frame for frame (its eval JSONs are identical).
+HIST = [("hist_r1", "R1: 1800 frames (800/600/400)"),
+        ("uniform", "R2: 3000 frames (1000/1000/1000)"),
+        ("hist_r3", "R3: 4500 frames (2500/1000/1000)")]
+# Round 3 again on renderer v2 (mirror-symmetric anti-aliasing), identical frames, two label pipelines.
+PAIR = [("hist_r3_v2", "R3, centred labels"),
+        ("hist_r3_bug_v2", "R3, 2024 labels + always-on flip")]
 
 # Reference palette (dataviz skill, references/palette.md): chrome + categorical slots.
 THEMES = {
@@ -44,12 +48,15 @@ def eval_of(name):
     return load(p) if os.path.exists(p) else None
 
 
-def arm_stats(arm):
-    """Pool episodes over seeds; keep per-seed rates and offline numbers."""
+CONDITIONS = [("", "nominal"), ("recovery", "recovery start"), ("lat3", "150 ms loop")]
+
+
+def arm_stats(arm, cond=""):
+    """Pool episodes over seeds for one eval condition; keep per-seed rates and offline numbers."""
     seeds = []
     for tj in sorted(glob.glob(os.path.join(ROOT, "runs", f"{arm}_s[0-9]", "train.json"))):
         run = os.path.basename(os.path.dirname(tj))
-        ev = eval_of(run)
+        ev = eval_of(run + (f"_{cond}" if cond else ""))
         if ev is None:
             continue
         tr = load(tj)
@@ -79,7 +86,7 @@ def pct(x):
 
 
 def ci(s):
-    return f"{pct(s['rate'])} ({s['k']}/{s['n']}) [{pct(s['lo'])}–{pct(s['hi'])}]"
+    return f"{s['k']}/{s['n']} [{pct(s['lo'])}–{pct(s['hi'])}]"
 
 
 def failures(status):
@@ -87,18 +94,41 @@ def failures(status):
     return ", ".join(parts) if parts else "—"
 
 
-def table_arms(rows):
-    out = ["| Arm | Frames | Complete (pooled seeds) [Wilson 95%] | Per seed | Held-out click error | "
-           "2024-style test error | Lateral error | Weave /m | Steer saturated | Failures |",
-           "|---|---|---|---|---|---|---|---|---|---|"]
-    for arm, label, s in rows:
-        if s is None:
-            out.append(f"| {label} | — | not run yet | | | | | | | |")
+def table_arms(arms):
+    heads = " | ".join(f"Complete, {lbl}" for _, lbl in CONDITIONS)
+    out = [f"| Arm | Frames | Held-out click error | 2024-style test error | {heads} | Weave /m (nominal) | Failures (all conditions) |",
+           "|---|---|---|---|" + "---|" * len(CONDITIONS) + "---|---|"]
+    for arm, label in arms:
+        per = [arm_stats(arm, c) for c, _ in CONDITIONS]
+        base = per[0]
+        if base is None:
+            out.append(f"| {label} | — | not run yet |" + " |" * (len(CONDITIONS) + 3))
             continue
-        per = " · ".join(f"{x['k']}/{x['n']}" for x in s["seeds"])
-        out.append(f"| {label} | {s['n_frames']} | {ci(s)} | {per} | {s['val_px']:.1f} px | {s['test_px']:.1f} px | "
-                   f"{100 * s['lat']:.1f} cm | {s['weave']:.3f} | {pct(s['sat'])} | {failures(s['status'])} |")
+        cells = [ci(p) if p else "—" for p in per]
+        fails = {}
+        for p in per:
+            for k, v in (p["status"] if p else {}).items():
+                fails[k] = fails.get(k, 0) + v
+        out.append(f"| {label} | {base['n_frames']} | {base['val_px']:.1f} px | {base['test_px']:.1f} px | "
+                   + " | ".join(cells) + f" | {base['weave']:.3f} | {failures(fails)} |")
     return "\n".join(out)
+
+
+def table_flipcheck():
+    rows = [("results/flip_check.json", "renderer v1 (pyrDown anti-aliasing)"),
+            ("results/flip_check_v2.json", "renderer v2 (mirror-symmetric)")]
+    out = ["| Bug-faithful net, trained on | Mean x on real frames | Mean x on the same frames mirrored | "
+           "Distance to raw 2024 label | Distance to the flip-average |", "|---|---|---|---|---|"]
+    n = 0
+    for path, label in rows:
+        path = os.path.join(ROOT, path)
+        if not os.path.exists(path):
+            continue
+        d = load(path)
+        n += 1
+        out.append(f"| {label} | {d['mean_x_real']:+.2f} | {d['mean_x_mirror']:+.2f} | "
+                   f"{d['real_vs_raw_2024_label_mae']:.2f} | {d['real_vs_flipmean_label_mae']:.2f} |")
+    return "\n".join(out) if n else "_flip check not run yet_"
 
 
 def table_baselines():
@@ -189,29 +219,37 @@ def _style(ax, t):
     ax.set_axisbelow(True)
 
 
-def fig_arms(stats, fname):
+def fig_arms(arms, fname):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    rows = [(label, s) for _, label, s in stats if s is not None]
-    if not rows:
+    grid = [(label, [arm_stats(arm, c) for c, _ in CONDITIONS]) for arm, label in arms]
+    grid = [(label, per) for label, per in grid if per[0] is not None]
+    if not grid:
         return
     for mode, t in THEMES.items():
-        fig, ax = plt.subplots(figsize=(7.2, 0.45 * len(rows) + 1.0), facecolor=t["surface"])
-        _style(ax, t)
+        fig, axes = plt.subplots(1, len(CONDITIONS), figsize=(9.6, 0.42 * len(grid) + 1.3),
+                                 facecolor=t["surface"], sharey=True)
         c = t["series"][0]
-        for i, (label, s) in enumerate(rows):
-            y = len(rows) - 1 - i
-            ax.plot([100 * s["lo"], 100 * s["hi"]], [y, y], color=c, linewidth=2, solid_capstyle="round")
-            for sd in s["seeds"]:
-                ax.plot(100 * sd["rate"], y, "o", ms=4, color=t["muted"], alpha=0.8, zorder=3)
-            ax.plot(100 * s["rate"], y, "o", ms=9, color=c, markeredgecolor=t["surface"], markeredgewidth=2, zorder=4)
-            ax.text(101.5, y, f"{100 * s['rate']:.0f}%", va="center", fontsize=9, color=t["ink"])
-        ax.set_yticks(range(len(rows)))
-        ax.set_yticklabels([label for label, _ in rows][::-1], color=t["ink2"], fontsize=9)
-        ax.set_xlim(0, 108)
-        ax.set_xticks([0, 25, 50, 75, 100])
-        ax.set_xlabel("corridors completed (%) · big dot pooled over seeds, bar Wilson 95%, small dots per seed",
+        for j, (ax, (_, cond_label)) in enumerate(zip(axes, CONDITIONS)):
+            _style(ax, t)
+            for i, (label, per) in enumerate(grid):
+                s = per[j]
+                y = len(grid) - 1 - i
+                if s is None:
+                    continue
+                ax.plot([100 * s["lo"], 100 * s["hi"]], [y, y], color=c, linewidth=2, solid_capstyle="round")
+                for sd in s["seeds"]:
+                    ax.plot(100 * sd["rate"], y, "o", ms=3.5, color=t["muted"], alpha=0.8, zorder=3)
+                ax.plot(100 * s["rate"], y, "o", ms=8, color=c, markeredgecolor=t["surface"], markeredgewidth=2, zorder=4)
+                ax.text(100 * s["rate"], y + 0.32, f"{100 * s['rate']:.0f}%", ha="center", fontsize=8, color=t["ink"])
+            ax.set_xlim(-4, 104)
+            ax.set_xticks([0, 50, 100])
+            ax.set_title(cond_label, color=t["ink"], fontsize=10, loc="left")
+            ax.set_ylim(-0.6, len(grid) - 0.2)
+        axes[0].set_yticks(range(len(grid)))
+        axes[0].set_yticklabels([label for label, _ in grid][::-1], color=t["ink2"], fontsize=9)
+        fig.supxlabel("corridors completed (%): big dot pooled over seeds, bar = Wilson 95%, small dots = seeds",
                       color=t["muted"], fontsize=8)
         fig.tight_layout()
         fig.savefig(os.path.join(ROOT, "assets", f"{fname}_{mode}.png"), dpi=160, facecolor=t["surface"])
@@ -264,11 +302,13 @@ def main():
     os.makedirs(os.path.join(ROOT, "assets"), exist_ok=True)
     main_stats = [(a, lbl, arm_stats(a)) for a, lbl in MAIN]
     hist_stats = [(a, lbl, arm_stats(a)) for a, lbl in HIST]
-    fig_arms(main_stats, "fig_arms")
-    fig_arms(hist_stats, "fig_history")
+    fig_arms(MAIN, "fig_arms")
+    fig_arms(HIST, "fig_history")
+    fig_arms(PAIR, "fig_pair")
     fig_offline_vs_closed(main_stats + hist_stats, "fig_offline_vs_closed")
-    blocks = {"baselines": table_baselines(), "arms": table_arms(main_stats),
-              "history": table_arms(hist_stats), "detector": table_detector(), "nano": table_nano()}
+    blocks = {"baselines": table_baselines(), "arms": table_arms(MAIN), "history": table_arms(HIST),
+              "pair": table_arms(PAIR), "flipcheck": table_flipcheck(), "detector": table_detector(),
+              "nano": table_nano()}
     rewrite_readme(blocks)
     summary = {k: [{"arm": a, **({kk: vv for kk, vv in s.items() if kk != "seeds"} if s else {})}
                    for a, _, s in v] for k, v in (("main", main_stats), ("history", hist_stats))}

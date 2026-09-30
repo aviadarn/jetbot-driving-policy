@@ -58,6 +58,7 @@ def main():
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--manifest", help="train on these pool rows instead of sampling an arm")
     ap.add_argument("--label-mode", help="override the arm's label convention")
+    ap.add_argument("--name", help="run directory name (default: <arm>); the seed is appended")
     ap.add_argument("--epochs", type=int, default=70)
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--lr", type=float, default=1e-3)
@@ -66,7 +67,7 @@ def main():
     a = ap.parse_args()
 
     torch.manual_seed(a.seed)
-    run = os.path.join(a.runs, f"{a.arm}_s{a.seed}")
+    run = os.path.join(a.runs, f"{a.name or a.arm}_s{a.seed}")
     os.makedirs(run, exist_ok=True)
     rows = read_pool(a.pool)
     if a.manifest:
@@ -124,7 +125,7 @@ def main():
               f"val {val_loss:.4f} ({val_px:.1f}px)  {time.time() - t0:.0f}s", flush=True)
 
     best_by_test = min(hist, key=lambda h: h["test_loss"])
-    out = {"arm": a.arm, "seed": a.seed, "label_mode": label_mode, "n_frames": len(arm_rows),
+    out = {"arm": a.arm, "seed": a.seed, "label_mode": label_mode, "pool": a.pool, "n_frames": len(arm_rows),
            "n_train": len(train_rows), "buckets": {b: sum(r["bucket"] == b for r in arm_rows)
                                                   for b in ("straight", "left", "right")},
            "best": best, "best_epoch_by_2024_test_loss": best_by_test["epoch"],

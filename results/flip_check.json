@@ -1,0 +1,9 @@
+{
+ "run": "runs/hist_r3_bug_s0",
+ "frames": 400,
+ "real_vs_raw_2024_label_mae": 0.116,
+ "real_vs_flipmean_label_mae": 1.313,
+ "mirror_vs_negated_raw_label_mae": 0.634,
+ "mean_x_real": 1.361,
+ "mean_x_mirror": -0.651
+}

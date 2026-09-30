@@ -57,6 +57,8 @@ class Fisheye:
         footprint = np.sqrt(np.abs(gx_x * gy_y - gy_x * gx_y))
         lvl = np.clip(np.log2(np.maximum(footprint, 1.0)), 0, levels - 1)
         self.levels = levels
+        # Levels are 2x2 box averages (see remap), so level-k pixel i covers source pixels
+        # [i*2^k, (i+1)*2^k) and its centre sits at (i + 0.5) * 2^k - 0.5.
         self.level_maps = [((self.map_x + 0.5) / 2 ** k - 0.5, (self.map_y + 0.5) / 2 ** k - 0.5)
                            for k in range(levels)]
         w = np.stack([np.clip(1 - np.abs(lvl - k), 0, 1) for k in range(levels)])
@@ -67,7 +69,10 @@ class Fisheye:
         img = pinhole_rgb
         for k in range(self.levels):
             if k:
-                img = cv2.pyrDown(img)
+                # 2x2 box downsample, not cv2.pyrDown: pyrDown centres its taps on even pixels,
+                # so it does not commute with a horizontal mirror, and that half-pixel handedness
+                # was enough for the 2024-label network to tell flipped training frames apart.
+                img = cv2.resize(img, (img.shape[1] // 2, img.shape[0] // 2), interpolation=cv2.INTER_AREA)
             mx, my = self.level_maps[k]
             out += self.level_w[k] * cv2.remap(img, mx, my, cv2.INTER_LINEAR,
                                                borderMode=cv2.BORDER_REPLICATE).astype(np.float32)
