@@ -29,7 +29,9 @@ def _terrazzo(path, seed=0, size=512):
         mask = rng.random((size, size)) < frac
         img[mask] = colour
     img = np.clip(img, 0, 255).astype(np.uint8)
-    Image.fromarray(img).save(path)
+    tmp = f"{path}.{os.getpid()}.png"  # atomic: parallel eval workers may build the same texture
+    Image.fromarray(img).save(tmp)
+    os.replace(tmp, path)
 
 
 def _cone_mesh(radius=0.12, height=0.45, n=16):
@@ -39,12 +41,14 @@ def _cone_mesh(radius=0.12, height=0.45, n=16):
     return " ".join(f"{a:.4f} {b:.4f} {c:.4f}" for a, b, c in verts)
 
 
-def build_xml(track, stop_boards=(), rng=None):
-    """stop_boards: iterable of (x, y, yaw) for stop-sign boards (Phase 2)."""
+def build_xml(track, stop_boards=(), rng=None, floor_seed=0):
+    """stop_boards: iterable of (x, y, yaw) for stop-sign boards (Phase 2).
+    floor_seed: which speckle pattern tiles the floor. Every collected frame uses 0; other
+    seeds give a floor the network has never seen (used to test mirror detection)."""
     rng = rng or np.random.default_rng(track.seed)
     os.makedirs(ASSET_DIR, exist_ok=True)
-    floor_png = os.path.join(ASSET_DIR, "terrazzo.png")
-    _terrazzo(floor_png)
+    floor_png = os.path.join(ASSET_DIR, "terrazzo.png" if floor_seed == 0 else f"terrazzo_{floor_seed}.png")
+    _terrazzo(floor_png, seed=floor_seed)
     fish = Fisheye()
 
     root = ET.Element("mujoco", model=f"corridor_{track.seed}")

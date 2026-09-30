@@ -35,9 +35,9 @@ class Look:
 
 
 class Sim:
-    def __init__(self, track, stop_boards=(), look_seed=None, randomise=True):
+    def __init__(self, track, stop_boards=(), look_seed=None, randomise=True, floor_seed=0):
         self.track = track
-        self.model = mujoco.MjModel.from_xml_string(build_xml(track, stop_boards))
+        self.model = mujoco.MjModel.from_xml_string(build_xml(track, stop_boards, floor_seed=floor_seed))
         self.data = mujoco.MjData(self.model)
         self.renderer = mujoco.Renderer(self.model, CAM.render, CAM.render)
         self.cam_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, "cam")

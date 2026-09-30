@@ -11,3 +11,4 @@ matplotlib==3.11.2
 onnx==1.23.1
 onnxruntime==1.30.0
 pytest==9.1.1
+imageio-ffmpeg==0.6.0

@@ -49,6 +49,7 @@ def eval_of(name):
 
 
 CONDITIONS = [("", "nominal"), ("recovery", "recovery start"), ("lat3", "150 ms loop")]
+PAIR_CONDITIONS = CONDITIONS + [("newfloor", "unseen floor")]
 
 
 def arm_stats(arm, cond=""):
@@ -94,15 +95,15 @@ def failures(status):
     return ", ".join(parts) if parts else "—"
 
 
-def table_arms(arms):
-    heads = " | ".join(f"Complete, {lbl}" for _, lbl in CONDITIONS)
+def table_arms(arms, conds=CONDITIONS):
+    heads = " | ".join(f"Complete, {lbl}" for _, lbl in conds)
     out = [f"| Arm | Frames | Held-out click error | 2024-style test error | {heads} | Weave /m (nominal) | Failures (all conditions) |",
-           "|---|---|---|---|" + "---|" * len(CONDITIONS) + "---|---|"]
+           "|---|---|---|---|" + "---|" * len(conds) + "---|---|"]
     for arm, label in arms:
-        per = [arm_stats(arm, c) for c, _ in CONDITIONS]
+        per = [arm_stats(arm, c) for c, _ in conds]
         base = per[0]
         if base is None:
-            out.append(f"| {label} | — | not run yet |" + " |" * (len(CONDITIONS) + 3))
+            out.append(f"| {label} | — | not run yet |" + " |" * (len(conds) + 3))
             continue
         cells = [ci(p) if p else "—" for p in per]
         fails = {}
@@ -129,6 +130,50 @@ def table_flipcheck():
         out.append(f"| {label} | {d['mean_x_real']:+.2f} | {d['mean_x_mirror']:+.2f} | "
                    f"{d['real_vs_raw_2024_label_mae']:.2f} | {d['real_vs_flipmean_label_mae']:.2f} |")
     return "\n".join(out) if n else "_flip check not run yet_"
+
+
+def headline():
+    """The README's opening bullets, from the same JSONs as everything else."""
+    def ev(name):
+        e = eval_of(name)
+        return e["summary"] if e else None
+    out = []
+    good, bug, bugf = ev("hist_r3_v2_s0"), ev("hist_r3_bug_v2_s0"), ev("hist_r3_bug_v2_s0_newfloor")
+    if good and bug:
+        out.append(f"- **The label code, not the data mix, decides whether it drives (in simulation).** The same 4,500 "
+                   f"round-3 frames complete {good['complete']}/{good['episodes']} unseen corridors with centred labels and "
+                   f"{bug['complete']}/{bug['episodes']} with the 2024 label pipeline, every failure off the right side, "
+                   f"steering pinned at full lock {pct(bug['steer_saturated_frac'])} of the time"
+                   + (f" ({bugf['complete']}/{bugf['episodes']} on a floor the network had never seen)." if bugf else ".")
+                   + " The real 2024 car drove smoothly on that pipeline, so this is a simulator prediction to test on "
+                   "the car, not a verdict on 2024.")
+    arms = [arm_stats(a) for a, _ in MAIN]
+    if all(arms):
+        lo, hi = min(a["k"] for a in arms), max(a["k"] for a in arms)
+        span = f"{hi}/40" if lo == hi else f"{lo}–{hi}/40"
+        rec = arm_stats("natural", "recovery")
+        out.append(f"- **Every data mix drives once the labels are right.** R1, uniform and R3 ratios, clean drives "
+                   f"and DAgger all complete {span} unseen corridors. The mix only shows at the margins: trained on clean "
+                   f"drives alone, the net misses {rec['n'] - rec['k']}/{rec['n']} starts from off-centre and weaves "
+                   f"{arms[0]['weave'] / min(a['weave'] for a in arms[1:]):.0f}× more than the best mix.")
+        nat = arms[0]
+        out.append(f"- **The 2024 validation split would have hidden it.** Trained only on clean drives, the net scores "
+                   f"{nat['test_px']:.1f} px on a random 10% of its own corridors and {nat['val_px']:.1f} px on corridors "
+                   f"it never saw.")
+    real = os.path.join(ROOT, "results", "detector_real2024.json")
+    if os.path.exists(real):
+        r = [x for x in load(real) if x["detector"] == "2024_retrained" and x["order"] == "bgr"][0]
+        out.append(f"- **The stop-sign data teaches nothing about what isn't a sign.** Retrained with the 2024 recipe, "
+                   f"the detector boxes ~{100 * r['median_box_area_frac']:.0f}% of the frame on {r['stopped']}/{r['frames']} "
+                   f"real 2024 frames that contain no sign. (The 2024 car's own detector worked; its weights are gone.)")
+    a_, b_ = (os.path.join(ROOT, "results", "nano", f) for f in ("loop_a_2024.json", "loop_b_improved.json"))
+    if os.path.exists(a_) and os.path.exists(b_):
+        a, b = load(a_), load(b_)
+        out.append(f"- **On the same Jetson Nano: {a['fps']:.1f} → {b['fps']:.1f} fps.** The 2024 setting (detector at 640, "
+                   f"FP32, every frame) takes {a['arrival_to_command_ms']['p50']:.0f} ms per decision even on TensorRT; "
+                   f"FP16, a 320 input and a detector every 4th frame bring it to {b['arrival_to_command_ms']['p50']:.1f} ms, "
+                   f"so the camera becomes the limit.")
+    return "\n".join(out)
 
 
 def table_baselines():
@@ -219,19 +264,19 @@ def _style(ax, t):
     ax.set_axisbelow(True)
 
 
-def fig_arms(arms, fname):
+def fig_arms(arms, fname, conds=CONDITIONS):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    grid = [(label, [arm_stats(arm, c) for c, _ in CONDITIONS]) for arm, label in arms]
+    grid = [(label, [arm_stats(arm, c) for c, _ in conds]) for arm, label in arms]
     grid = [(label, per) for label, per in grid if per[0] is not None]
     if not grid:
         return
     for mode, t in THEMES.items():
-        fig, axes = plt.subplots(1, len(CONDITIONS), figsize=(9.6, 0.42 * len(grid) + 1.3),
+        fig, axes = plt.subplots(1, len(conds), figsize=(2.6 * len(conds) + 1.8, 0.42 * len(grid) + 1.3),
                                  facecolor=t["surface"], sharey=True)
         c = t["series"][0]
-        for j, (ax, (_, cond_label)) in enumerate(zip(axes, CONDITIONS)):
+        for j, (ax, (_, cond_label)) in enumerate(zip(axes, conds)):
             _style(ax, t)
             for i, (label, per) in enumerate(grid):
                 s = per[j]
@@ -249,39 +294,41 @@ def fig_arms(arms, fname):
             ax.set_ylim(-0.6, len(grid) - 0.2)
         axes[0].set_yticks(range(len(grid)))
         axes[0].set_yticklabels([label for label, _ in grid][::-1], color=t["ink2"], fontsize=9)
-        fig.supxlabel("corridors completed (%): big dot pooled over seeds, bar = Wilson 95%, small dots = seeds",
-                      color=t["muted"], fontsize=8)
+        n_seeds = max(len(per[0]["seeds"]) for _, per in grid)
+        note = ("one seed; bar = Wilson 95% interval over its 40 corridors" if n_seeds == 1 else
+                "big dot pooled over seeds, bar = Wilson 95%, small dots = seeds")
+        fig.supxlabel(f"corridors completed (%): {note}", color=t["muted"], fontsize=8)
         fig.tight_layout()
         fig.savefig(os.path.join(ROOT, "assets", f"{fname}_{mode}.png"), dpi=160, facecolor=t["surface"])
         plt.close(fig)
 
 
-def fig_offline_vs_closed(stats, fname):
+def fig_leakage(stats, fname):
+    """Click error on the 2024-style split (random 10% of the same corridors) vs on corridors
+    never trained on. The gap is how much a random frame split flatters a driving policy."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    runs = [(arm, sd) for arm, _, s in stats if s for sd in s["seeds"]]
-    if not runs:
+    rows = [(label, s) for _, label, s in stats if s is not None]
+    if not rows:
         return
     for mode, t in THEMES.items():
-        fig, axes = plt.subplots(1, 2, figsize=(8, 3.2), facecolor=t["surface"], sharey=True)
-        for ax, key, title in [(axes[0], "test_px", "2024-style test error\n(random 10% of the same corridors)"),
-                               (axes[1], "val_px", "held-out corridors")]:
-            _style(ax, t)
-            ax.yaxis.grid(True, color=t["grid"], linewidth=0.8)
-            xs = [sd[key] for _, sd in runs]
-            ys = [100 * sd["rate"] for _, sd in runs]
-            ax.plot(xs, ys, "o", ms=7, color=t["series"][0], markeredgecolor=t["surface"], markeredgewidth=1.5)
-            done = set()
-            for (arm, sd), x, y in zip(runs, xs, ys):
-                if arm in done:
-                    continue
-                done.add(arm)
-                ax.annotate(arm, (x, y), textcoords="offset points", xytext=(5, 4), fontsize=7, color=t["ink2"])
-            ax.set_xlabel(f"click error (px) — {title}", color=t["muted"], fontsize=8)
-            ax.set_xscale("log")
-        axes[0].set_ylabel("closed-loop completion (%)", color=t["muted"], fontsize=8)
-        axes[0].set_ylim(-5, 105)
+        fig, ax = plt.subplots(figsize=(7.4, 0.55 * len(rows) + 1.2), facecolor=t["surface"])
+        _style(ax, t)
+        h = 0.36
+        for i, (label, s) in enumerate(rows):
+            y = len(rows) - 1 - i
+            for off, key, c in ((h / 2 + 0.02, "test_px", t["series"][0]), (-h / 2 - 0.02, "val_px", t["series"][1])):
+                ax.barh(y + off, s[key], height=h, color=c, edgecolor=t["surface"], linewidth=2)
+                ax.text(s[key] + 0.3, y + off, f"{s[key]:.1f}", va="center", fontsize=8, color=t["ink2"])
+        ax.set_yticks(range(len(rows)))
+        ax.set_yticklabels([label for label, _ in rows][::-1], color=t["ink2"], fontsize=9)
+        ax.set_xlabel("click error (px, 224-pixel frame)", color=t["muted"], fontsize=8)
+        from matplotlib.patches import Patch
+        ax.legend(handles=[Patch(color=t["series"][0], label="2024-style split (same corridors)"),
+                           Patch(color=t["series"][1], label="corridors never trained on")],
+                  loc="lower left", bbox_to_anchor=(0.0, 1.0), ncol=2, frameon=False, fontsize=8,
+                  labelcolor=t["ink2"], borderaxespad=0.3)
         fig.tight_layout()
         fig.savefig(os.path.join(ROOT, "assets", f"{fname}_{mode}.png"), dpi=160, facecolor=t["surface"])
         plt.close(fig)
@@ -293,8 +340,8 @@ def rewrite_readme(blocks):
         return
     text = open(path).read()
     for key, body in blocks.items():
-        pat = re.compile(rf"(<!-- BEGIN:{key} -->\n).*?(\n<!-- END:{key} -->)", re.S)
-        text = pat.sub(lambda m: m.group(1) + body + m.group(2), text)
+        pat = re.compile(rf"(<!-- BEGIN:{key} -->).*?(<!-- END:{key} -->)", re.S)
+        text = pat.sub(lambda m: m.group(1) + "\n" + body + "\n" + m.group(2), text)
     open(path, "w").write(text)
 
 
@@ -304,10 +351,10 @@ def main():
     hist_stats = [(a, lbl, arm_stats(a)) for a, lbl in HIST]
     fig_arms(MAIN, "fig_arms")
     fig_arms(HIST, "fig_history")
-    fig_arms(PAIR, "fig_pair")
-    fig_offline_vs_closed(main_stats + hist_stats, "fig_offline_vs_closed")
-    blocks = {"baselines": table_baselines(), "arms": table_arms(MAIN), "history": table_arms(HIST),
-              "pair": table_arms(PAIR), "flipcheck": table_flipcheck(), "detector": table_detector(),
+    fig_arms(PAIR, "fig_pair", PAIR_CONDITIONS)
+    fig_leakage(main_stats, "fig_leakage")
+    blocks = {"headline": headline(), "baselines": table_baselines(), "arms": table_arms(MAIN), "history": table_arms(HIST),
+              "pair": table_arms(PAIR, PAIR_CONDITIONS), "flipcheck": table_flipcheck(), "detector": table_detector(),
               "nano": table_nano()}
     rewrite_readme(blocks)
     summary = {k: [{"arm": a, **({kk: vv for kk, vv in s.items() if kk != "seeds"} if s else {})}

@@ -64,7 +64,7 @@ def run_job(job):
     spec, seed, rev = job
     track = Track(seed)
     track = track.reversed() if rev else track
-    sim = Sim(track, look_seed=seed * 2 + rev)
+    sim = Sim(track, look_seed=seed * 2 + rev, floor_seed=spec.get("floor_seed", 0))
     rec = [] if spec.get("gif") and seed == EVAL_SEEDS[0] and not rev else None
     lat0, dh0 = 0.0, 0.0
     if spec.get("recovery"):
@@ -102,6 +102,7 @@ def main():
     ap.add_argument("--latency", type=int, help="frames of actuation delay (default: config)")
     ap.add_argument("--period", type=int, default=1, help="process every Nth frame (slow loop)")
     ap.add_argument("--recovery", action="store_true", help="start 0.35 m off-centre, 15 deg outward")
+    ap.add_argument("--floor-seed", type=int, default=0, help="floor texture; 0 = the one all training frames used")
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--device", default="mps")
     ap.add_argument("--gif", help="save the first episode as onboard|top-down GIF")
@@ -120,6 +121,7 @@ def main():
     spec["latency"] = a.latency
     spec["period"] = a.period
     spec["recovery"] = a.recovery
+    spec["floor_seed"] = a.floor_seed
     spec["gif"] = a.gif
     name += f"_{a.tag}" if a.tag else ""
 
@@ -141,7 +143,7 @@ def main():
                "wilson95": [round(lo, 4), round(hi, 4)], "progress_frac": mean("progress_frac"),
                "mean_abs_lateral_m": mean("mean_abs_lateral_m"), "weave_per_m": mean("weave_per_m"),
                "steer_saturated_frac": mean("steer_saturated_frac"), "status": status,
-               "latency_steps": a.latency, "period": a.period, "recovery": a.recovery, "minutes": round((time.time() - t0) / 60, 2)}
+               "latency_steps": a.latency, "period": a.period, "recovery": a.recovery, "floor_seed": a.floor_seed, "minutes": round((time.time() - t0) / 60, 2)}
     os.makedirs(a.out, exist_ok=True)
     with open(os.path.join(a.out, f"{name}.json"), "w") as f:
         json.dump({"summary": summary, "spec": {k: v for k, v in spec.items() if k != "gif"},

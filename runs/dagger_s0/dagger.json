@@ -1,0 +1,11 @@
+{
+ "base": "runs/natural_s0",
+ "on_policy_frames": 23782,
+ "base_policy_on_train_tracks": {
+  "complete": 60
+ },
+ "mix": {
+  "expert_drive": 1500,
+  "on_policy_relabelled": 1500
+ }
+}

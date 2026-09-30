@@ -3,7 +3,10 @@ data/
 __pycache__/
 *.pyc
 jdp/_assets/
-runs/
+runs/**
+!runs/**/
+!runs/*/train.json
+!runs/*/dagger.json
 .DS_Store
 third_party/
 runs_sweep.log

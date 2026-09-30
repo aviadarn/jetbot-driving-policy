@@ -31,6 +31,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default="runs/hist_r3_bug_s0")
     ap.add_argument("--n", type=int, default=240)
+    ap.add_argument("--out", default="results/flip_texture_check.json")
     a = ap.parse_args()
     m = SteeringNet(pretrained=False)
     m.load_state_dict(torch.load(os.path.join(a.run, "best.pt"), map_location="cpu"))
@@ -67,7 +68,7 @@ def main():
             "real_vs_flipmean_label_mae": round(float(np.abs(real - (raw - 1.23)).mean()), 3),
             "asymmetry_mean_real_plus_mirror": round(float((real + mirr).mean()), 3)}
         print(tex_seed, json.dumps(out[f"texture_seed_{tex_seed}"]), flush=True)
-    json.dump(out, open(os.path.join("results", "flip_texture_check.json"), "w"), indent=1)
+    json.dump(out, open(a.out, "w"), indent=1)
 
 
 if __name__ == "__main__":

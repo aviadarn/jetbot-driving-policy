@@ -1,0 +1,18 @@
+{
+ "texture_seed_0": {
+  "frames": 240,
+  "mean_x_real": 1.327,
+  "mean_x_mirror": -0.302,
+  "real_vs_raw_2024_label_mae": 0.118,
+  "real_vs_flipmean_label_mae": 1.316,
+  "asymmetry_mean_real_plus_mirror": 1.025
+ },
+ "texture_seed_7": {
+  "frames": 240,
+  "mean_x_real": 0.732,
+  "mean_x_mirror": 1.147,
+  "real_vs_raw_2024_label_mae": 0.636,
+  "real_vs_flipmean_label_mae": 1.018,
+  "asymmetry_mean_real_plus_mirror": 1.879
+ }
+}

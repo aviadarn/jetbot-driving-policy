@@ -57,12 +57,13 @@ def main():
     ap.add_argument("--max-frames", type=int, default=110)
     ap.add_argument("--tile", type=int, default=176)
     ap.add_argument("--device", default="mps")
+    ap.add_argument("--mp4", help="also write an H.264 MP4 of the same frames (for web pages)")
     a = ap.parse_args()
     drives = [drive(r, a.track, a.device) for r in a.runs]
     for r, (_, _, res) in zip(a.runs, drives):
         print(r, json.dumps(res))
     n = min(a.max_frames, max(len(rec) for rec, _, _ in drives[:]) // a.every)
-    frames = []
+    frames, rgb = [], []
     for k in range(n):
         rows = []
         for (rec, tops, res), label in zip(drives, a.labels):
@@ -74,10 +75,18 @@ def main():
         for r in rows:
             stack.paste(r, (0, y))
             y += r.height
+        rgb.append(np.array(stack))
         frames.append(stack.quantize(colors=64, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE))
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     frames[0].save(a.out, save_all=True, append_images=frames[1:], duration=150, loop=0, optimize=True)
     print(f"wrote {a.out}: {len(frames)} frames, {os.path.getsize(a.out) / 1e6:.1f} MB")
+    if a.mp4:
+        import imageio.v2 as imageio
+        h, w = rgb[0].shape[:2]
+        rgb = [np.pad(f, ((0, h % 2), (0, w % 2), (0, 0)), mode="edge") for f in rgb]  # even size for yuv420
+        imageio.mimwrite(a.mp4, rgb, fps=1000 / 150, codec="libx264", quality=None,
+                         output_params=["-crf", "26", "-pix_fmt", "yuv420p", "-movflags", "+faststart"])
+        print(f"wrote {a.mp4}: {os.path.getsize(a.mp4) / 1e6:.2f} MB")
 
 
 if __name__ == "__main__":
