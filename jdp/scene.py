@@ -14,6 +14,7 @@ from .config import CAM, TRACK
 from .camera import Fisheye
 
 ASSET_DIR = os.path.join(os.path.dirname(__file__), "_assets")
+STOP_H, STOP_HALF = 0.45, 0.15  # kid-scale sign: 30 cm board centred at cone height
 NOCOLLIDE = {"contype": "0", "conaffinity": "0"}
 
 
@@ -131,11 +132,11 @@ def _stop_board(world, asset, k, x, y, yaw):
         ET.SubElement(asset, "material", name="stop", texture="stop")
     body = ET.SubElement(world, "body", name=f"stop{k}", pos=f"{x:.3f} {y:.3f} 0",
                          euler=f"0 0 {yaw:.4f}")
-    ET.SubElement(body, "geom", type="cylinder", size="0.015 0.35", pos="0 0 0.35",
+    ET.SubElement(body, "geom", type="cylinder", size=f"0.015 {STOP_H / 2:.3f}", pos=f"0 0 {STOP_H / 2:.3f}",
                   rgba="0.6 0.6 0.6 1", **NOCOLLIDE)
     # Plane-textured board facing -x of the body (toward an approaching car).
-    ET.SubElement(body, "geom", name=f"stop{k}_face", type="box", size="0.004 0.15 0.15",
-                  pos="-0.02 0 0.8", material="stop", **NOCOLLIDE)
+    ET.SubElement(body, "geom", name=f"stop{k}_face", type="box", size=f"0.004 {STOP_HALF} {STOP_HALF}",
+                  pos=f"-0.02 0 {STOP_H:.3f}", material="stop", **NOCOLLIDE)
 
 
 def _draw_stop(path, size=256):
@@ -154,7 +155,7 @@ def _draw_stop(path, size=256):
     except OSError:
         font = ImageFont.load_default()
     d.text((r, r), "STOP", fill=(255, 255, 255), anchor="mm", font=font)
-    img.save(path)
+    img.transpose(Image.FLIP_LEFT_RIGHT).save(path)  # MuJoCo maps it mirrored on the -x face
 
 
 def _rgba(rgb):

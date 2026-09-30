@@ -31,7 +31,7 @@ def wilson(k, n, z=1.96):
     d = 1 + z * z / n
     c = p + z * z / (2 * n)
     h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
-    return ((c - h) / d, (c + h) / d)
+    return (max(0.0, (c - h) / d), min(1.0, (c + h) / d))
 
 
 def _policy(spec, track):
@@ -65,7 +65,8 @@ def run_job(job):
     track = track.reversed() if rev else track
     sim = Sim(track, look_seed=seed * 2 + rev)
     rec = [] if spec.get("gif") and seed == EVAL_SEEDS[0] and not rev else None
-    m = run_episode(sim, _policy(spec, track), Controller2024(), latency_steps=spec.get("latency"), record=rec)
+    m = run_episode(sim, _policy(spec, track), Controller2024(), latency_steps=spec.get("latency"),
+                    record=rec, period=spec.get("period", 1))
     if rec:
         _gif(sim, rec, spec["gif"])
     sim.close()
@@ -73,14 +74,17 @@ def run_job(job):
     return m
 
 
-def _gif(sim, rec, path):
-    import imageio.v2 as imageio
+def _gif(sim, rec, path, every=3, max_frames=160, tile=176):
+    """Onboard view | top-down view. The speckled floor defeats GIF compression, so frames
+    are subsampled, downscaled and quantised to keep README GIFs to a few MB."""
+    from PIL import Image
     frames = []
-    for img, pose, _ in rec[::2]:
+    for img, pose, _ in rec[::every][:max_frames]:
         top = sim.render_topdown(pose, size=224, span=7.0)
-        frames.append(np.concatenate([img, top], axis=1))
+        pair = Image.fromarray(np.concatenate([img, top], axis=1)).resize((2 * tile, tile), Image.BILINEAR)
+        frames.append(pair.quantize(colors=64, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE))
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    imageio.mimsave(path, frames, duration=0.1, loop=0)
+    frames[0].save(path, save_all=True, append_images=frames[1:], duration=150, loop=0, optimize=True)
 
 
 def main():
@@ -90,6 +94,7 @@ def main():
     ap.add_argument("--label-mode", default="symmetric", help="for --policy expert")
     ap.add_argument("--tracks", type=int, default=len(EVAL_SEEDS))
     ap.add_argument("--latency", type=int, help="frames of actuation delay (default: config)")
+    ap.add_argument("--period", type=int, default=1, help="process every Nth frame (slow loop)")
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--device", default="mps")
     ap.add_argument("--gif", help="save the first episode as onboard|top-down GIF")
@@ -106,6 +111,7 @@ def main():
         spec = {"policy": a.policy, "label_mode": a.label_mode}
         name = a.policy + ("" if a.label_mode == "symmetric" else f"_{a.label_mode}")
     spec["latency"] = a.latency
+    spec["period"] = a.period
     spec["gif"] = a.gif
     name += f"_{a.tag}" if a.tag else ""
 
@@ -127,7 +133,7 @@ def main():
                "wilson95": [round(lo, 4), round(hi, 4)], "progress_frac": mean("progress_frac"),
                "mean_abs_lateral_m": mean("mean_abs_lateral_m"), "weave_per_m": mean("weave_per_m"),
                "steer_saturated_frac": mean("steer_saturated_frac"), "status": status,
-               "latency_steps": a.latency, "minutes": round((time.time() - t0) / 60, 2)}
+               "latency_steps": a.latency, "period": a.period, "minutes": round((time.time() - t0) / 60, 2)}
     os.makedirs(a.out, exist_ok=True)
     with open(os.path.join(a.out, f"{name}.json"), "w") as f:
         json.dump({"summary": summary, "spec": {k: v for k, v in spec.items() if k != "gif"},

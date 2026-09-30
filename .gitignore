@@ -7,3 +7,5 @@ runs/
 .DS_Store
 third_party/
 runs_sweep.log
+results/onnx/
+results/smoke/

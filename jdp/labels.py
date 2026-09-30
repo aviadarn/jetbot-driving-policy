@@ -14,6 +14,11 @@ OUT = 224
 def encode(u, v, mode):
     if mode == "2024":
         return (u - 50.0) / 50.0, (v - 50.0) / 50.0
+    if mode == "2024_flipmean":
+        # Not a training convention: the best a perfectly trained 2024 net can output. Under the
+        # always-on 50% flip with x = -x, the MSE-optimal x is the mean of (u-50)/50 and
+        # -((223-u)-50)/50, i.e. (u-111.5)/50. y is never flipped, so it keeps (v-50)/50.
+        return (u - 111.5) / 50.0, (v - 50.0) / 50.0
     if mode == "symmetric":
         c = OUT / 2
         return (u - c) / c, (v - c) / c

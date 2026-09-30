@@ -1,0 +1,16 @@
+jetbot-driving-policy
+Copyright (C) 2026 Aviad Aranias. Licensed under the GNU Affero General Public License v3.0 (see LICENSE).
+
+This repository rebuilds a 2023-24 project, github.com/daisyKim12/autonomous_driving, which
+was built with my kid. The 2024 controller in jdp/controller.py is ported from that project's
+rf_live_detection.ipynb, and the 2024 training pipeline in jdp/data.py follows its
+rf_train_model.ipynb.
+
+Third-party code and data used but not vendored:
+- YOLOv5, Ultralytics, AGPL-3.0 (https://github.com/ultralytics/yolov5). Cloned into
+  third_party/ by the setup instructions, used to train and export the stop-sign detector.
+- 2024 stop-sign dataset: Roboflow "stop" v2 export (CC BY 4.0), whose images are crops
+  from the German Traffic Sign Recognition Benchmark (GTSRB), class 14. Fetched from the
+  2024 repository, not redistributed here.
+- torchvision ResNet18 ImageNet weights (BSD-3-Clause).
+- NVIDIA JetBot road-following notebooks (MIT), the origin of the 2024 notebooks' structure.

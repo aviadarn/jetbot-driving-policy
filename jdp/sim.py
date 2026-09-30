@@ -76,12 +76,14 @@ class Sim:
 
 
 def run_episode(sim, policy, controller, start_s=0.3, latency_steps=None, max_time=None,
-                record=None, stop_fn=None):
+                record=None, stop_fn=None, period=1):
     """Closed-loop drive from the start of the corridor to its end.
 
     policy(img, pose) -> (x, y) in the policy's label convention (learned policies ignore
     pose; the expert ignores img and sets needs_image=False to skip rendering).
     Returns metrics dict. `record` (list) collects (onboard, pose) per step for GIFs.
+    `period` > 1 models a loop slower than the camera: the latest frame is processed every
+    `period` frames and the last command is held in between (latency_steps sets the delay).
     """
     tr = sim.track
     car = Car(tr.pose_at(start_s), latency_steps=latency_steps)
@@ -89,13 +91,19 @@ def run_episode(sim, policy, controller, start_s=0.3, latency_steps=None, max_ti
     max_time = max_time or tr.length / 0.2  # generous: 0.2 m/s average
     hint = tr.index(start_s)
     lat_hist, s_hist, steer_hist = [], [], []
-    t, status = 0.0, "timeout"
+    t, status, k = 0.0, "timeout", 0
+    throttle, steer = 0.0, 0.0
     while t < max_time:
-        img = sim.render(car.pose) if getattr(policy, "needs_image", True) or record is not None else None
-        xy = policy(img, car.pose)
-        stop = bool(stop_fn(img)) if stop_fn else False
-        throttle, steer = controller.step(xy, stop=stop)
-        if record is not None:
+        fresh = k % period == 0
+        k += 1
+        img = None
+        if fresh and (getattr(policy, "needs_image", True) or record is not None):
+            img = sim.render(car.pose)
+        if fresh:
+            xy = policy(img, car.pose)
+            stop = bool(stop_fn(img)) if stop_fn else False
+            throttle, steer = controller.step(xy, stop=stop)
+        if record is not None and img is not None:
             record.append((img, car.pose.copy(), float(steer)))
         car.step(throttle, steer)
         t += DT

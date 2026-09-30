@@ -5,6 +5,7 @@ frame-arrival-to-command: from cap.read() returning a frame to the command being
 It does not include the ISP/queue delay before the frame arrives, or motor response.
 
   python3 loop.py --policy policy_fp16.engine --dry-run --seconds 60
+  sudo python3 loop.py ...   # root is needed for tegrastats to report board power
   python3 loop.py --policy policy_fp16.engine --detector yolo320_fp16.engine --det-size 320 \
                   --det-every 4 --dry-run --seconds 60 --out results_improved.json
   python3 loop.py --policy policy_fp32.engine --detector yolo640_fp32.engine --det-size 640 \
@@ -63,9 +64,12 @@ def main():
     ap.add_argument("--det-size", type=int, default=320)
     ap.add_argument("--det-every", type=int, default=1)
     ap.add_argument("--det-bgr", action="store_true", help="feed BGR like 2024 (trained on RGB)")
+    ap.add_argument("--prep", choices=["numpy", "cv2"], default="cv2",
+                    help="numpy: astype/transpose/255 in Python; cv2: dnn.blobFromImage in C++")
     ap.add_argument("--seconds", type=float, default=60)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--out", default="loop_results.json")
+    ap.add_argument("--label", default="", help="name shown in the README table")
     a = ap.parse_args()
     if not a.dry_run:
         sys.exit("motor output is Phase 6 and needs the board reconnected; use --dry-run")
@@ -81,7 +85,7 @@ def main():
 
     ts = Tegrastats()
     ts.start()
-    t_pol, t_det, t_total, arrivals, stops = [], [], [], [], 0
+    t_prep, t_pol, t_det, t_total, arrivals, stops = [], [], [], [], [], 0
     t_end = time.time() + a.seconds
     k = 0
     while time.time() < t_end:
@@ -90,30 +94,38 @@ def main():
         if not ok:
             continue
         arrivals.append(t0)
-        x = frame.astype(np.float32).transpose(2, 0, 1)[None] / 255.0  # BGR/255, as trained
+        if a.prep == "numpy":
+            x = frame.astype(np.float32).transpose(2, 0, 1)[None] / 255.0  # BGR/255, as trained
+        else:
+            x = cv2.dnn.blobFromImage(frame, 1.0 / 255.0)  # same tensor, BGR kept (swapRB=False)
+        tp = time.perf_counter()
         xy = policy(x)[0].reshape(-1)
         t1 = time.perf_counter()
         stop = False
         if det is not None and k % a.det_every == 0:
             img = frame if a.det_bgr else frame[..., ::-1]
             img = cv2.resize(img, (a.det_size, a.det_size), interpolation=cv2.INTER_LINEAR)
-            d = img.astype(np.float32).transpose(2, 0, 1)[None] / 255.0
+            d = cv2.dnn.blobFromImage(img, 1.0 / 255.0)
             stop = len(yolo_boxes(det(d)[0])) > 0
             t_det.append((time.perf_counter() - t1) * 1e3)
         throttle, steer = ctl.step(xy, stop=stop)
         t2 = time.perf_counter()
         stops += int(stop)
-        t_pol.append((t1 - t0) * 1e3)
+        t_prep.append((tp - t0) * 1e3)
+        t_pol.append((t1 - tp) * 1e3)
         t_total.append((t2 - t0) * 1e3)
         k += 1
     ts.stop()
     cap.release()
 
     period = np.diff(arrivals) * 1e3
+    gpu_hz = open("/sys/devices/gpu.0/devfreq/57000000.gpu/cur_freq").read().strip()
     res = {
+        "label": a.label, "gpu_clock_hz_at_end": int(gpu_hz),
         "frames": k, "seconds": a.seconds, "fps": round(k / a.seconds, 2),
         "policy": os.path.basename(a.policy), "detector": a.detector and os.path.basename(a.detector),
-        "det_size": a.det_size, "det_every": a.det_every, "det_bgr": a.det_bgr,
+        "det_size": a.det_size, "det_every": a.det_every, "det_bgr": a.det_bgr, "prep": a.prep,
+        "prep_ms": {"p50": pct(t_prep, 50), "p95": pct(t_prep, 95)},
         "policy_ms": {"p50": pct(t_pol, 50), "p95": pct(t_pol, 95), "p99": pct(t_pol, 99)},
         "detector_ms": {"p50": pct(t_det, 50), "p95": pct(t_det, 95), "p99": pct(t_det, 99)},
         "arrival_to_command_ms": {"p50": pct(t_total, 50), "p95": pct(t_total, 95), "p99": pct(t_total, 99)},

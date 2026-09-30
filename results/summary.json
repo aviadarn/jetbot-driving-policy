@@ -1,0 +1,33 @@
+{
+ "main": [
+  {
+   "arm": "natural"
+  },
+  {
+   "arm": "r1_ratio"
+  },
+  {
+   "arm": "uniform"
+  },
+  {
+   "arm": "r3_ratio"
+  },
+  {
+   "arm": "dagger"
+  }
+ ],
+ "history": [
+  {
+   "arm": "hist_r1"
+  },
+  {
+   "arm": "hist_r2"
+  },
+  {
+   "arm": "hist_r3"
+  },
+  {
+   "arm": "hist_r3_bug"
+  }
+ ]
+}
