@@ -1,0 +1,45 @@
+{
+ "label": "2024 setting on TensorRT: policy FP32 + 2024 detector 640 FP32, BGR, every frame",
+ "gpu_clock_hz_at_end": 921600000,
+ "frames": 201,
+ "seconds": 30.0,
+ "fps": 6.7,
+ "policy": "policy_fp32.engine",
+ "detector": "yolo2024_640_fp32.engine",
+ "det_size": 640,
+ "det_every": 1,
+ "det_bgr": true,
+ "det_class": 0,
+ "prep": "cv2",
+ "stop_frac_of_detector_frames": 1.0,
+ "prep_ms": {
+  "p50": 0.91,
+  "p95": 1.06
+ },
+ "policy_ms": {
+  "p50": 20.96,
+  "p95": 21.22,
+  "p99": 21.41
+ },
+ "detector_ms": {
+  "p50": 120.78,
+  "p95": 121.75,
+  "p99": 122.96
+ },
+ "arrival_to_command_ms": {
+  "p50": 142.71,
+  "p95": 143.69,
+  "p99": 145.1
+ },
+ "frame_period_ms": {
+  "p50": 142.85,
+  "p95": 143.83
+ },
+ "stop_frames": 201,
+ "ram_mb": {
+  "max": 2311
+ },
+ "board_power_mw": {
+  "mean": null
+ }
+}

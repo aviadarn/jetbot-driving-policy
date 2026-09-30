@@ -1,0 +1,34 @@
+[
+ {
+  "detector": "2024_retrained",
+  "order": "bgr",
+  "frames": 12,
+  "stopped": 12,
+  "median_box_area_frac": 0.97,
+  "median_conf": 0.957
+ },
+ {
+  "detector": "2024_retrained",
+  "order": "rgb",
+  "frames": 12,
+  "stopped": 12,
+  "median_box_area_frac": 0.973,
+  "median_conf": 0.962
+ },
+ {
+  "detector": "coco_yolov5s",
+  "order": "bgr",
+  "frames": 12,
+  "stopped": 0,
+  "median_box_area_frac": null,
+  "median_conf": null
+ },
+ {
+  "detector": "coco_yolov5s",
+  "order": "rgb",
+  "frames": 12,
+  "stopped": 0,
+  "median_box_area_frac": null,
+  "median_conf": null
+ }
+]

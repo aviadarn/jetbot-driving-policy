@@ -1,0 +1,106 @@
+{
+ "device": "Jetson Nano 4GB (Tegra X1, Maxwell, 128 CUDA cores), JetPack 4.6.1, TensorRT 8.2.1.8",
+ "clocks": "pinned with jetson_clocks: GPU 921.6 MHz, CPU 1479 MHz, nvpmodel MAXN",
+ "runs": [
+  {
+   "model": "coco_320",
+   "precision": "fp16",
+   "median_ms": 23.1632,
+   "mean_ms": 23.1645,
+   "p99_ms": 23.2324,
+   "min_ms": 23.1016,
+   "max_ms": 23.2465,
+   "engine_mb": 15.7
+  },
+  {
+   "model": "coco_320",
+   "precision": "fp32",
+   "median_ms": 34.0991,
+   "mean_ms": 34.1026,
+   "p99_ms": 34.2294,
+   "min_ms": 33.9951,
+   "max_ms": 34.2448,
+   "engine_mb": 35.0
+  },
+  {
+   "model": "coco_640",
+   "precision": "fp16",
+   "median_ms": 82.4336,
+   "mean_ms": 82.4386,
+   "p99_ms": 82.6152,
+   "min_ms": 82.3027,
+   "max_ms": 82.8853,
+   "engine_mb": 23.6
+  },
+  {
+   "model": "coco_640",
+   "precision": "fp32",
+   "median_ms": 120.099,
+   "mean_ms": 120.104,
+   "p99_ms": 120.359,
+   "min_ms": 119.775,
+   "max_ms": 120.385,
+   "engine_mb": 44.5
+  },
+  {
+   "model": "policy",
+   "precision": "fp16",
+   "median_ms": 12.2975,
+   "mean_ms": 12.295,
+   "p99_ms": 12.3455,
+   "min_ms": 12.2067,
+   "max_ms": 12.3477,
+   "engine_mb": 45.5
+  },
+  {
+   "model": "policy",
+   "precision": "fp32",
+   "median_ms": 19.5239,
+   "mean_ms": 19.5196,
+   "p99_ms": 19.7,
+   "min_ms": 19.356,
+   "max_ms": 19.7244,
+   "engine_mb": 90.8
+  },
+  {
+   "model": "yolo2024_320",
+   "precision": "fp16",
+   "median_ms": 19.4203,
+   "mean_ms": 19.4219,
+   "p99_ms": 19.4893,
+   "min_ms": 19.3665,
+   "max_ms": 19.4943,
+   "engine_mb": 15.3
+  },
+  {
+   "model": "yolo2024_320",
+   "precision": "fp32",
+   "median_ms": 30.038,
+   "mean_ms": 30.0389,
+   "p99_ms": 30.1182,
+   "min_ms": 29.9722,
+   "max_ms": 30.1699,
+   "engine_mb": 34.2
+  },
+  {
+   "model": "yolo2024_640",
+   "precision": "fp16",
+   "median_ms": 67.6875,
+   "mean_ms": 67.6921,
+   "p99_ms": 67.8691,
+   "min_ms": 67.5381,
+   "max_ms": 67.9551,
+   "engine_mb": 23.2
+  },
+  {
+   "model": "yolo2024_640",
+   "precision": "fp32",
+   "median_ms": 104.101,
+   "mean_ms": 104.1,
+   "p99_ms": 104.585,
+   "min_ms": 103.875,
+   "max_ms": 104.632,
+   "engine_mb": 43.7
+  }
+ ]
+}

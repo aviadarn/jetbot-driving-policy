@@ -1,0 +1,9 @@
+{
+ "what": "Same live loop (policy FP16 engine, cv2 preprocessing, 20 s, --dry-run) BEFORE clocks were pinned, GPU clock sampled every 0.5 s during the run. Transcribed from the run's console output on 2026-09-29; the JSON files themselves were overwritten by the pinned runs.",
+ "gpu_clock_hz_samples": {"76800000": 7, "153600000": 8, "460800000": 1, "537600000": 24},
+ "policy_ms": {"p50": 21.54, "p95": 21.7, "p99": 24.6},
+ "prep_ms": {"p50": 1.21, "p95": 1.34},
+ "arrival_to_command_ms": {"p50": 22.83, "p95": 22.98, "p99": 25.96},
+ "fps": 21.05,
+ "pinned_comparison_file": "loop_policy_fp16_cv2.json"
+}

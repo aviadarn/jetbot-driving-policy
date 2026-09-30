@@ -117,17 +117,36 @@ def table_baselines():
     return "\n".join(out)
 
 
+def _range(by_distance, thresh=0.9):
+    """Farthest distance d such that every probe distance <= d localises the sign >= thresh."""
+    best = 0.0
+    for d, v in sorted(by_distance.items(), key=lambda kv: float(kv[0])):
+        if v["hit"] < thresh:
+            break
+        best = float(d)
+    return f"{best:.1f} m" if best else "none"
+
+
 def table_detector():
     p = os.path.join(ROOT, "results", "detector_probe.json")
     if not os.path.exists(p):
         return "_detector probe not run yet_"
-    res = load(p)
-    out = ["| Detector | Input | Channels | Stops with sign in view | Box on the sign | False stops (no sign) |",
-           "|---|---|---|---|---|---|"]
-    for r in res:
-        tag = " ← 2024 config" if (r["detector"], r["size"], r["order"]) == ("2024_retrained", 640, "bgr") else ""
+    out = ["| Detector | Input | Channels | Stops, sign in view | Box on the sign | Reliable range (≥90%) | "
+           "False stops, no sign |", "|---|---|---|---|---|---|---|"]
+    for r in load(p):
+        tag = " **(2024 setting)**" if (r["detector"], r["size"], r["order"]) == ("2024_retrained", 640, "bgr") else ""
         out.append(f"| {r['detector'].replace('_', ' ')}{tag} | {r['size']} | {r['order'].upper()} | "
-                   f"{pct(r['stop_rate'])} | {pct(r['hit_rate'])} | {pct(r['false_stop'])} |")
+                   f"{pct(r['stop_rate'])} | {pct(r['hit_rate'])} | {_range(r['by_distance'])} | {pct(r['false_stop'])} |")
+    real = os.path.join(ROOT, "results", "detector_real2024.json")
+    if os.path.exists(real):
+        out += ["", "On real frames from the 2024 car, none of which contains a stop sign "
+                "(`scripts/probe_real_frames.py`):", "",
+                "| Detector | Channels | Frames that would have stopped the car | Median box size | Median confidence |",
+                "|---|---|---|---|---|"]
+        for r in load(real):
+            area = f"{100 * r['median_box_area_frac']:.0f}% of the frame" if r["median_box_area_frac"] else "—"
+            conf = f"{r['median_conf']:.2f}" if r["median_conf"] else "—"
+            out.append(f"| {r['detector'].replace('_', ' ')} | {r['order'].upper()} | {r['stopped']}/{r['frames']} | {area} | {conf} |")
     return "\n".join(out)
 
 
@@ -145,15 +164,16 @@ def table_nano():
         out.append(f"_Clocks: {b['clocks']}._")
         out.append("")
     if files:
-        out += ["| Loop | FPS | Preprocess p50 | Policy p50 | Detector p50 | Frame-arrival → command p50 / p95 | RAM (system) |",
-                "|---|---|---|---|---|---|---|"]
+        out += ["| Loop | FPS | Preprocess p50 | Policy p50 | Detector p50 | Frame-arrival → command p50 / p95 | "
+                "Detector frames that stopped the car | RAM (system) |", "|---|---|---|---|---|---|---|---|"]
         for fpath in files:
             d = load(fpath)
             det = f"{d['detector_ms']['p50']:.1f} ms" if d["detector_ms"]["p50"] else "—"
             prep = f"{d['prep_ms']['p50']:.1f} ms" if d.get("prep_ms") else "—"
+            stops = pct(d["stop_frac_of_detector_frames"]) if d.get("detector") else "—"
             out.append(f"| {d.get('label', os.path.basename(fpath))} | {d['fps']:.1f} | {prep} | {d['policy_ms']['p50']:.1f} ms | "
                        f"{det} | {d['arrival_to_command_ms']['p50']:.1f} / {d['arrival_to_command_ms']['p95']:.1f} ms | "
-                       f"{d['ram_mb']['max']} MB |")
+                       f"{stops} | {d['ram_mb']['max']} MB |")
     return "\n".join(out) if out else "_Nano not measured yet_"
 
 

@@ -1,0 +1,45 @@
+{
+ "label": "policy FP16 + COCO detector 320 FP16, RGB, every frame",
+ "gpu_clock_hz_at_end": 921600000,
+ "frames": 590,
+ "seconds": 30.0,
+ "fps": 19.67,
+ "policy": "policy_fp16.engine",
+ "detector": "coco_320_fp16.engine",
+ "det_size": 320,
+ "det_every": 1,
+ "det_bgr": false,
+ "det_class": 11,
+ "prep": "cv2",
+ "stop_frac_of_detector_frames": 0.0,
+ "prep_ms": {
+  "p50": 0.91,
+  "p95": 1.14
+ },
+ "policy_ms": {
+  "p50": 13.64,
+  "p95": 13.89,
+  "p99": 14.21
+ },
+ "detector_ms": {
+  "p50": 35.95,
+  "p95": 36.95,
+  "p99": 37.9
+ },
+ "arrival_to_command_ms": {
+  "p50": 50.63,
+  "p95": 51.61,
+  "p99": 52.74
+ },
+ "frame_period_ms": {
+  "p50": 50.76,
+  "p95": 51.75
+ },
+ "stop_frames": 0,
+ "ram_mb": {
+  "max": 1953
+ },
+ "board_power_mw": {
+  "mean": null
+ }
+}

@@ -1,0 +1,43 @@
+{
+ "label": "policy only, TRT FP32",
+ "gpu_clock_hz_at_end": 921600000,
+ "frames": 603,
+ "seconds": 30.0,
+ "fps": 20.1,
+ "policy": "policy_fp32.engine",
+ "detector": null,
+ "det_size": 320,
+ "det_every": 1,
+ "det_bgr": false,
+ "prep": "cv2",
+ "prep_ms": {
+  "p50": 0.9,
+  "p95": 1.0
+ },
+ "policy_ms": {
+  "p50": 20.76,
+  "p95": 20.88,
+  "p99": 20.92
+ },
+ "detector_ms": {
+  "p50": null,
+  "p95": null,
+  "p99": null
+ },
+ "arrival_to_command_ms": {
+  "p50": 21.72,
+  "p95": 21.85,
+  "p99": 21.93
+ },
+ "frame_period_ms": {
+  "p50": 47.62,
+  "p95": 47.78
+ },
+ "stop_frames": 0,
+ "ram_mb": {
+  "max": 2181
+ },
+ "board_power_mw": {
+  "mean": null
+ }
+}

@@ -64,6 +64,7 @@ def main():
     ap.add_argument("--det-size", type=int, default=320)
     ap.add_argument("--det-every", type=int, default=1)
     ap.add_argument("--det-bgr", action="store_true", help="feed BGR like 2024 (trained on RGB)")
+    ap.add_argument("--det-class", type=int, default=0, help="stop-sign class id: 0 = 2024 detector, 11 = COCO")
     ap.add_argument("--prep", choices=["numpy", "cv2"], default="cv2",
                     help="numpy: astype/transpose/255 in Python; cv2: dnn.blobFromImage in C++")
     ap.add_argument("--seconds", type=float, default=60)
@@ -106,7 +107,7 @@ def main():
             img = frame if a.det_bgr else frame[..., ::-1]
             img = cv2.resize(img, (a.det_size, a.det_size), interpolation=cv2.INTER_LINEAR)
             d = cv2.dnn.blobFromImage(img, 1.0 / 255.0)
-            stop = len(yolo_boxes(det(d)[0])) > 0
+            stop = any(b[5] == a.det_class for b in yolo_boxes(det(d)[0]))
             t_det.append((time.perf_counter() - t1) * 1e3)
         throttle, steer = ctl.step(xy, stop=stop)
         t2 = time.perf_counter()
@@ -124,7 +125,8 @@ def main():
         "label": a.label, "gpu_clock_hz_at_end": int(gpu_hz),
         "frames": k, "seconds": a.seconds, "fps": round(k / a.seconds, 2),
         "policy": os.path.basename(a.policy), "detector": a.detector and os.path.basename(a.detector),
-        "det_size": a.det_size, "det_every": a.det_every, "det_bgr": a.det_bgr, "prep": a.prep,
+        "det_size": a.det_size, "det_every": a.det_every, "det_bgr": a.det_bgr, "det_class": a.det_class,
+        "prep": a.prep, "stop_frac_of_detector_frames": round(stops / max(1, len(t_det)), 4),
         "prep_ms": {"p50": pct(t_prep, 50), "p95": pct(t_prep, 95)},
         "policy_ms": {"p50": pct(t_pol, 50), "p95": pct(t_pol, 95), "p99": pct(t_pol, 99)},
         "detector_ms": {"p50": pct(t_det, 50), "p95": pct(t_det, 95), "p99": pct(t_det, 99)},

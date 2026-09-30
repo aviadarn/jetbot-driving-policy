@@ -1,0 +1,43 @@
+{
+ "label": "policy only, TRT FP16, cv2 preprocessing",
+ "gpu_clock_hz_at_end": 921600000,
+ "frames": 631,
+ "seconds": 30.0,
+ "fps": 21.03,
+ "policy": "policy_fp16.engine",
+ "detector": null,
+ "det_size": 320,
+ "det_every": 1,
+ "det_bgr": false,
+ "prep": "cv2",
+ "prep_ms": {
+  "p50": 0.91,
+  "p95": 1.01
+ },
+ "policy_ms": {
+  "p50": 13.46,
+  "p95": 13.52,
+  "p99": 13.54
+ },
+ "detector_ms": {
+  "p50": null,
+  "p95": null,
+  "p99": null
+ },
+ "arrival_to_command_ms": {
+  "p50": 14.42,
+  "p95": 14.5,
+  "p99": 14.55
+ },
+ "frame_period_ms": {
+  "p50": 47.62,
+  "p95": 47.79
+ },
+ "stop_frames": 0,
+ "ram_mb": {
+  "max": 1909
+ },
+ "board_power_mw": {
+  "mean": null
+ }
+}
