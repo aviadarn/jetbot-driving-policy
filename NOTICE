@@ -1,7 +1,7 @@
 jetbot-driving-policy
 Copyright (C) 2026 Aviad Aranias. Licensed under the GNU Affero General Public License v3.0 (see LICENSE).
 
-This repository rebuilds a 2023-24 project, github.com/daisyKim12/autonomous_driving, which
+This repository rebuilds a 2024 project, github.com/daisyKim12/autonomous_driving, which
 was built with my kid. The 2024 controller in jdp/controller.py is ported from that project's
 rf_live_detection.ipynb, and the 2024 training pipeline in jdp/data.py follows its
 rf_train_model.ipynb.
