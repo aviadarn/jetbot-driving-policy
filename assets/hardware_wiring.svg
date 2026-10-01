@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 556" width="960" height="556" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Wiring of the 2024 JetBot ride-on car</title>
+  <defs>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2a78d6"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#eb6834"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#898781"/></marker>
+  </defs>
+  <rect width="960" height="556" fill="#fcfcfb"/>
+
+  <!-- groups -->
+  <rect x="280" y="44" width="360" height="210" rx="8" fill="#f3f2ee" stroke="#898781"/>
+  <text x="296" y="66" font-size="13" font-weight="600" fill="#0b0b0b">Waveshare JetBot board</text>
+  <rect x="280" y="302" width="360" height="200" rx="8" fill="#f3f2ee" stroke="#898781"/>
+  <text x="296" y="324" font-size="13" font-weight="600" fill="#0b0b0b">Jetson Nano 4 GB · JetPack 4.6.1</text>
+  <rect x="680" y="44" width="256" height="250" rx="8" fill="#f3f2ee" stroke="#898781"/>
+  <text x="696" y="66" font-size="13" font-weight="600" fill="#0b0b0b">kids' ride-on car</text>
+
+  <!-- power lines (under boxes) -->
+  <path d="M124,80 V24 H545 V78" fill="none" stroke="#eb6834" stroke-width="2" marker-end="url(#ao)"/>
+  <text x="300" y="18" font-size="11.5" fill="#52514e">motor supply, up to 12.6 V</text>
+  <path d="M224,103 H298" fill="none" stroke="#eb6834" stroke-width="2" marker-end="url(#ao)"/>
+  <path d="M450,103 H460 V300" fill="none" stroke="#eb6834" stroke-width="2" marker-end="url(#ao)"/>
+  <text x="466" y="282" font-size="11.5" fill="#52514e">5 V</text>
+  <path d="M620,103 H698" fill="none" stroke="#eb6834" stroke-width="2" marker-end="url(#ao)"/>
+  <text x="634" y="96" font-size="11" fill="#52514e">ch 1</text>
+  <path d="M620,115 H660 V169 H698" fill="none" stroke="#eb6834" stroke-width="2" marker-end="url(#ao)"/>
+  <text x="634" y="162" font-size="11" fill="#52514e">ch 2</text>
+  <path d="M916,249 H928 V103 H918" fill="none" stroke="#898781" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+
+  <!-- signal lines -->
+  <path d="M545,378 V234" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#ab)"/>
+  <text x="553" y="276" font-size="11.5" fill="#52514e">I2C bus 1</text>
+  <text x="553" y="291" font-size="11.5" fill="#52514e">(pins 3, 5)</text>
+  <path d="M545,186 V128" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#ab)"/>
+  <text x="553" y="161" font-size="11.5" fill="#52514e">PWM</text>
+  <path d="M224,363 H298" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#ab)"/>
+  <text x="236" y="356" font-size="11.5" fill="#52514e">CSI</text>
+  <path d="M262,363 V445 H298" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#ab)"/>
+  <path d="M450,363 H460 V393 H468" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#ab)"/>
+  <path d="M450,445 H460 V413 H468" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#ab)"/>
+  <path d="M640,445 H680" fill="none" stroke="#2a78d6" stroke-width="2"/>
+
+  <!-- boxes -->
+  <g font-size="13" fill="#0b0b0b">
+    <rect x="24" y="80" width="200" height="60" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="124" y="105" text-anchor="middle" font-weight="600">3× 18650 Li-ion</text>
+    <text x="124" y="124" text-anchor="middle" font-size="11.5" fill="#52514e">up to 12.6 V, on the kit</text>
+
+    <rect x="24" y="333" width="200" height="60" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="124" y="358" text-anchor="middle" font-weight="600">IMX219-160 camera</text>
+    <text x="124" y="377" text-anchor="middle" font-size="11.5" fill="#52514e">160°, 224×224, ~21 fps</text>
+
+    <rect x="300" y="80" width="150" height="46" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="375" y="99" text-anchor="middle" font-weight="600">APW7313</text>
+    <text x="375" y="116" text-anchor="middle" font-size="11.5" fill="#52514e">5 V regulator</text>
+
+    <rect x="300" y="186" width="150" height="46" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="375" y="205" text-anchor="middle" font-weight="600">ADS1115 · OLED</text>
+    <text x="375" y="222" text-anchor="middle" font-size="11.5" fill="#52514e">battery level, IP</text>
+
+    <rect x="470" y="80" width="150" height="46" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="545" y="99" text-anchor="middle" font-weight="600">TB6612FNG</text>
+    <text x="545" y="116" text-anchor="middle" font-size="11.5" fill="#52514e">dual H-bridge, ~1 A/ch</text>
+
+    <rect x="470" y="186" width="150" height="46" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="545" y="205" text-anchor="middle" font-weight="600">PCA9685</text>
+    <text x="545" y="222" text-anchor="middle" font-size="11.5" fill="#52514e">PWM controller</text>
+
+    <rect x="300" y="338" width="150" height="50" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="375" y="358" text-anchor="middle" font-weight="600">steering net</text>
+    <text x="375" y="376" text-anchor="middle" font-size="11.5" fill="#52514e">ResNet18 · TRT FP16</text>
+
+    <rect x="300" y="420" width="150" height="50" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="375" y="440" text-anchor="middle" font-weight="600">stop-sign detector</text>
+    <text x="375" y="458" text-anchor="middle" font-size="11.5" fill="#52514e">YOLOv5s</text>
+
+    <rect x="470" y="378" width="150" height="50" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="545" y="398" text-anchor="middle" font-weight="600">2024 controller</text>
+    <text x="545" y="416" text-anchor="middle" font-size="11.5" fill="#52514e">throttle, steering</text>
+
+    <rect x="700" y="80" width="216" height="46" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="808" y="99" text-anchor="middle" font-weight="600">drive motor</text>
+    <text x="808" y="116" text-anchor="middle" font-size="11.5" fill="#52514e">left_motor = throttle</text>
+
+    <rect x="700" y="146" width="216" height="46" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="808" y="165" text-anchor="middle" font-weight="600">steering motor</text>
+    <text x="808" y="182" text-anchor="middle" font-size="11.5" fill="#52514e">right_motor = steering</text>
+
+    <rect x="700" y="226" width="216" height="46" rx="6" fill="#fcfcfb" stroke="#898781" stroke-dasharray="5 4"/>
+    <text x="808" y="245" text-anchor="middle" font-weight="600">car's own 6 V battery</text>
+    <text x="808" y="262" text-anchor="middle" font-size="11.5" fill="#52514e">wiring in 2024 not recorded</text>
+
+    <rect x="680" y="420" width="256" height="50" rx="6" fill="#fcfcfb" stroke="#c3c2b7"/>
+    <text x="808" y="440" text-anchor="middle" font-weight="600">Wireless-AC8265 Wi-Fi</text>
+    <text x="808" y="458" text-anchor="middle" font-size="11.5" fill="#52514e">ssh / Jupyter from a laptop</text>
+  </g>
+
+  <!-- legend -->
+  <g font-size="11.5" fill="#52514e">
+    <line x1="24" y1="530" x2="54" y2="530" stroke="#eb6834" stroke-width="2"/><text x="62" y="534">power</text>
+    <line x1="120" y1="530" x2="150" y2="530" stroke="#2a78d6" stroke-width="2"/><text x="158" y="534">signal / data</text>
+    <line x1="260" y1="530" x2="290" y2="530" stroke="#898781" stroke-width="1.5" stroke-dasharray="5 4"/><text x="298" y="534">not recorded</text>
+  </g>
+</svg>

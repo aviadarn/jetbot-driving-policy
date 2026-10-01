@@ -66,6 +66,7 @@ flowchart LR
 | Train / closed-loop eval / DAgger | `scripts/train.py`, `scripts/eval.py`, `scripts/dagger.py` |
 | On the Nano: TensorRT runner, live camera loop, benchmarks | `nano/` |
 | What is matched to the car and what is a guess | [docs/SIM_TO_REAL.md](docs/SIM_TO_REAL.md) |
+| Wiring diagram and parts list | [docs/HARDWARE.md](docs/HARDWARE.md) |
 | Trained steering policy, PyTorch and ONNX | [release v1.0](https://github.com/aviadarn/jetbot-driving-policy/releases/tag/v1.0) |
 
 ## What the 2024 code did
@@ -259,6 +260,24 @@ Two things only showed up when measured:
   Run `sudo jetson_clocks` before trusting any number (`results/nano/governor_unpinned.json`).
 - **INT8 doesn't exist here.** The Nano is Maxwell (SM 5.3), with no DP4A. FP16 is the only
   lever.
+
+## Hardware
+
+![Wiring of the 2024 car](assets/hardware_wiring.svg)
+
+As built in 2024:
+- NVIDIA Jetson Nano 4 GB developer kit, 64 GB microSD.
+- IMX219-160 camera (160° lens).
+- Waveshare JetBot AI Kit board: TB6612FNG motor driver, PCA9685 PWM, 5 V regulator, 3× 18650 cells.
+- Wireless-AC8265 Wi-Fi.
+- A kids' electric ride-on car (6 V) with a drive motor and a steering motor.
+- Orange cones and a printed stop sign.
+
+The full parts list in [docs/HARDWARE.md](docs/HARDWARE.md) says how each part is known
+(photo, code, kit spec or measured). It also has the test gear that would replace the
+simulator's guesses, an upgrade path (Orin Nano Super, high-current motor drivers, steering
+feedback), and a current-limit check: the TB6612FNG is rated about 1 A per channel, and
+ride-on motors can draw far more.
 
 ## Reproduce
 
